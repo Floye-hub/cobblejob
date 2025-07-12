@@ -10,22 +10,20 @@ import org.slf4j.LoggerFactory;
 public class CobbleJob implements ModInitializer {
 	public static final String MOD_ID = "cobblejob";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-	private final JobManager jobManager = new JobManager(); // Instance unique du JobManager
+	private final JobManager jobManager = new JobManager();
 
 	@Override
 	public void onInitialize() {
-		LOGGER.info("CobbleJob mod initializing...");
+		LOGGER.info("Initialisation CobbleJob...");
 
-		// Charger les définitions de jobs et les données des joueurs.
-		this.jobManager.loadJobs();
+		// Seul le chargement des données joueurs est nécessaire
 		this.jobManager.loadPlayerData();
 
-		// Enregistrer la commande.
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			JobCommand.register(dispatcher, this.jobManager);
 		});
 
-		LOGGER.info("CobbleJob mod initialized!");
+		LOGGER.info("CobbleJob initialisé!");
 	}
 
 	public JobManager getJobManager() {
