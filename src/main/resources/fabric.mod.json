@@ -16,7 +16,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.floye.cobblejob.Cobblejob"
+			"com.floye.cobblejob.CobbleJob"
 		]
 	},
 	"mixins": [
