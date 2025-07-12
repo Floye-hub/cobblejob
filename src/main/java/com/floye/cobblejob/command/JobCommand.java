@@ -20,24 +20,47 @@ import java.util.concurrent.CompletableFuture;
 import static net.minecraft.server.command.CommandManager.*;
 
 public class JobCommand {
-    private static final SuggestionProvider<ServerCommandSource> JOB_SUGGESTIONS =
-            (context, builder) -> getJobSuggestions(context.getSource(), builder);
-
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, JobManager jobManager) {
         dispatcher.register(literal("cobblejob")
                 .then(literal("join")
-                        .executes(context -> listJobs(context, jobManager))  // Sans argument
+                        .executes(context -> listJobs(context, jobManager))
                         .then(argument("job", StringArgumentType.word())
-                                .suggests(JOB_SUGGESTIONS) // Ajout des suggestions
-                                .executes(context -> joinJob(context, jobManager)))  // Avec argument
-                ));
+                                .suggests(getSuggestionProvider(jobManager))
+                                .executes(context -> joinJob(context, jobManager)))
+                )
+                .then(literal("leave")
+                        .executes(context -> leaveCurrentJob(context, jobManager))
+                        .then(argument("job", StringArgumentType.word())
+                                .suggests(getCurrentJobSuggestionProvider(jobManager))
+                                .executes(context -> leaveSpecificJob(context, jobManager)))
+                )
+        );
     }
 
-    private static CompletableFuture<Suggestions> getJobSuggestions(ServerCommandSource source, SuggestionsBuilder builder) {
-        JobManager jobManager = source.getServer().getCobbleJob().getJobManager();
+    private static SuggestionProvider<ServerCommandSource> getSuggestionProvider(JobManager jobManager) {
+        return (context, builder) -> getJobSuggestions(context.getSource(), builder, jobManager);
+    }
+
+    private static CompletableFuture<Suggestions> getJobSuggestions(ServerCommandSource source, SuggestionsBuilder builder, JobManager jobManager) {
         jobManager.getAvailableJobs().keySet().forEach(builder::suggest);
         return builder.buildFuture();
     }
+
+    private static SuggestionProvider<ServerCommandSource> getCurrentJobSuggestionProvider(JobManager jobManager) {
+        return (context, builder) -> {
+            try {
+                ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                String currentJob = jobManager.getCurrentJob(player);
+                if (currentJob != null) {
+                    builder.suggest(currentJob);
+                }
+            } catch (CommandSyntaxException e) {
+                // Ignore
+            }
+            return builder.buildFuture();
+        };
+    }
+
     private static int listJobs(CommandContext<ServerCommandSource> context, JobManager jobManager) {
         ServerCommandSource source = context.getSource();
         Map<String, String> jobs = jobManager.getAvailableJobs();
@@ -61,12 +84,68 @@ public class JobCommand {
         ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
         String jobName = context.getArgument("job", String.class).toUpperCase();
 
+        // Vérifier si le joueur a déjà un métier
+        String currentJob = jobManager.getCurrentJob(player);
+        if (currentJob != null) {
+            context.getSource().sendError(Text.literal("Vous avez déjà un métier: " + currentJob +
+                    ". Utilisez /cobblejob leave pour le quitter d'abord."));
+            return 0;
+        }
+
         if (jobManager.joinJob(player, jobName)) {
             context.getSource().sendFeedback(() -> Text.literal("Vous avez rejoint le job " + jobName)
                     .formatted(Formatting.GREEN), false);
             return Command.SINGLE_SUCCESS;
         } else {
             context.getSource().sendError(Text.literal("Job invalide. Utilisez /cobblejob join pour voir la liste"));
+            return 0;
+        }
+    }
+
+    // Méthode pour quitter le métier actuel
+    private static int leaveCurrentJob(CommandContext<ServerCommandSource> context, JobManager jobManager)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String currentJob = jobManager.getCurrentJob(player);
+
+        if (currentJob == null) {
+            context.getSource().sendError(Text.literal("Vous n'avez aucun métier à quitter."));
+            return 0;
+        }
+
+        if (jobManager.leaveJob(player)) {
+            context.getSource().sendFeedback(() -> Text.literal("Vous avez quitté votre métier: " + currentJob)
+                    .formatted(Formatting.GREEN), false);
+            return Command.SINGLE_SUCCESS;
+        } else {
+            context.getSource().sendError(Text.literal("Impossible de quitter votre métier."));
+            return 0;
+        }
+    }
+
+    // Méthode pour quitter un métier spécifique
+    private static int leaveSpecificJob(CommandContext<ServerCommandSource> context, JobManager jobManager)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String jobToLeave = context.getArgument("job", String.class).toUpperCase();
+        String currentJob = jobManager.getCurrentJob(player);
+
+        if (currentJob == null) {
+            context.getSource().sendError(Text.literal("Vous n'avez aucun métier à quitter."));
+            return 0;
+        }
+
+        if (!currentJob.equals(jobToLeave)) {
+            context.getSource().sendError(Text.literal("Vous n'êtes pas membre du métier " + jobToLeave));
+            return 0;
+        }
+
+        if (jobManager.leaveJob(player)) {
+            context.getSource().sendFeedback(() -> Text.literal("Vous avez quitté le métier: " + jobToLeave)
+                    .formatted(Formatting.GREEN), false);
+            return Command.SINGLE_SUCCESS;
+        } else {
+            context.getSource().sendError(Text.literal("Impossible de quitter votre métier."));
             return 0;
         }
     }
