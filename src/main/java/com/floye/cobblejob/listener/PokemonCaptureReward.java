@@ -1,42 +1,44 @@
 package com.floye.cobblejob.listener;
 
+import com.cobblemon.mod.common.api.Priority;
+import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.pokemon.PokemonCapturedEvent;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.floye.cobblejob.util.EconomyHandler;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class PokemonCaptureReward {
 
     public static void register() {
-        PokemonCapturedEvent.Companion.getEvent().subscribe(event -> {
-            ServerPlayer player = event.player();
-            UUID playerId = player.getUUID();
+        CobblemonEvents.POKEMON_CAPTURED.subscribe(Priority.NORMAL, event -> {
+            ServerPlayerEntity player = (ServerPlayerEntity) event.getPlayer();
+            Pokemon pokemon = event.getPokemon();
 
-            // Calcul du montant à donner (exemple: 100 * niveau du Pokémon)
-            int rewardAmount = event.pokemon().getLevel() * 100;
+            int level = pokemon.getLevel();
+            int rewardAmount = level * 100;
+            UUID uuid = player.getUuid();
 
-            // Récupère le compte du joueur de manière asynchrone
-            CompletableFuture<EconomyHandler.Account> accountFuture = EconomyHandler.getAccount(playerId);
+            CompletableFuture<net.impactdev.impactor.api.economy.accounts.Account> accountFuture = EconomyHandler.getAccount(uuid);
 
             accountFuture.thenAccept(account -> {
                 if (account != null) {
-                    boolean success = EconomyHandler.add(account, rewardAmount);
+                    boolean success = EconomyHandler.add(account, (double) rewardAmount);
                     if (success) {
-                        player.sendSystemMessage(Component.literal(
-                                "§aVous avez reçu " + rewardAmount + "$ pour avoir capturé ce Pokémon!"
-                        ));
+                        player.sendMessage(Text.literal("§aVous avez reçu " + rewardAmount + "$ pour avoir capturé ce Pokémon!"), false);
                     } else {
-                        player.sendSystemMessage(Component.literal(
-                                "§cErreur lors de l'ajout de la récompense!"
-                        ));
+                        player.sendMessage(Text.literal("§cErreur lors de l'ajout de la récompense!"), false);
                     }
                 }
             }).exceptionally(ex -> {
                 ex.printStackTrace();
                 return null;
             });
+            return null;
         });
+
     }
 }
