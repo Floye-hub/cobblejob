@@ -11,22 +11,26 @@ import org.slf4j.LoggerFactory;
 public class CobbleJob implements ModInitializer {
 	public static final String MOD_ID = "cobblejob";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+	private static CobbleJob instance; // singleton
+
 	private final JobManager jobManager = new JobManager();
 
 	@Override
 	public void onInitialize() {
+		instance = this;  // initialisation du singleton
+
 		LOGGER.info("Initialisation CobbleJob...");
-
-		// Seul le chargement des données joueurs est nécessaire
 		this.jobManager.loadPlayerData();
-
 		PokemonCaptureReward.register();
-
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			JobCommand.register(dispatcher, this.jobManager);
 		});
-
 		LOGGER.info("CobbleJob initialisé!");
+	}
+
+	public static CobbleJob getInstance() {
+		return instance;
 	}
 
 	public JobManager getJobManager() {
