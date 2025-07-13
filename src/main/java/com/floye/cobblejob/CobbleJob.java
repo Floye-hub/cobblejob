@@ -2,6 +2,7 @@ package com.floye.cobblejob;
 
 import com.floye.cobblejob.command.JobCommand;
 import com.floye.cobblejob.job.JobManager;
+import com.floye.cobblejob.listener.PokemonCaptureReward;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ public class CobbleJob implements ModInitializer {
 
 		// Seul le chargement des données joueurs est nécessaire
 		this.jobManager.loadPlayerData();
+
+		PokemonCaptureReward.register();
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			JobCommand.register(dispatcher, this.jobManager);
