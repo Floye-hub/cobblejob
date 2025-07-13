@@ -46,7 +46,37 @@ public class JobManager {
             jobDefinitions.put(jobType, new JobDefinition(jobType, jobData));
         }
     }
+    public String getCurrentJob(ServerPlayerEntity player) {
+        UUID playerId = player.getUuid();
+        PlayerJobData playerData = this.playerJobData.get(playerId);
 
+        if (playerData == null) {
+            return null; // The player has no job
+        }
+
+        return playerData.getCurrentJob(); // Return the player's current job
+    }
+    public boolean leaveJob(ServerPlayerEntity player) {
+        UUID playerId = player.getUuid();
+
+        // Check if the player has a job to leave
+        if (!this.playerJobData.containsKey(playerId)) {
+            return false; // Player is not in any job
+        }
+
+        // Remove the player's job data
+        this.playerJobData.remove(playerId);
+
+        // Delete the player's job data file
+        try {
+            Files.deleteIfExists(jobDataPath.resolve(playerId.toString() + ".json"));
+        } catch (IOException e) {
+            CobbleJob.LOGGER.error("Erreur lors de la suppression des données du joueur : ", e);
+            return false; // Return false if the file deletion failed
+        }
+
+        return true; // Indicate successful removal
+    }
     public void loadPlayerData() {
         try {
             Files.list(jobDataPath).filter(path -> path.toString().endsWith(".json")).forEach(path -> {
