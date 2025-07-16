@@ -74,6 +74,10 @@ public class PokemonCaptureReward {
             int rewardAmount = level * jobReward.baseReward;
             UUID uuid = player.getUuid();
 
+            int xpReward = level * 5; // Par exemple 5 XP par niveau du Pokémon
+            CobbleJob.getInstance().getJobManager().addXp(player, xpReward);
+            player.sendMessage(Text.literal("§6+" + xpReward + " XP dans votre métier!"), false);
+
             CompletableFuture<net.impactdev.impactor.api.economy.accounts.Account> accountFuture = EconomyHandler.getAccount(uuid);
 
             accountFuture.thenAccept(account -> {

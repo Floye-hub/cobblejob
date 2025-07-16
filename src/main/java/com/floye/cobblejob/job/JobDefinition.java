@@ -25,4 +25,8 @@ public class JobDefinition {
     public String getDescription() {
         return description;
     }
+
+    public String getLevelBonusDescription(int level) {
+        return String.format("Bonus niveau %d: +%d%% de récompense", level, level);
+    }
 }

@@ -30,6 +30,32 @@ public class JobManager {
         loadDefaultJobs();
     }
 
+    public void addXp(ServerPlayerEntity player, int amount) {
+        UUID playerId = player.getUuid();
+        PlayerJobData playerData = this.playerJobData.get(playerId);
+
+        if (playerData != null) {
+            playerData.addXp(amount);
+            savePlayerData(player);
+        }
+    }
+    public int getJobLevel(ServerPlayerEntity player) {
+        UUID playerId = player.getUuid();
+        PlayerJobData playerData = this.playerJobData.get(playerId);
+        return playerData != null ? playerData.getLevel() : 0;
+    }
+
+    public String getJobProgress(ServerPlayerEntity player) {
+        UUID playerId = player.getUuid();
+        PlayerJobData playerData = this.playerJobData.get(playerId);
+        if (playerData == null) return "Aucun métier";
+
+        return String.format("Niveau %d - %d/%d XP",
+                playerData.getLevel(),
+                playerData.getXp(),
+                playerData.getXpForNextLevel());
+    }
+
     private void loadDefaultJobs() {
         String[] jobTypes = {
                 "INSECTE", "TENEBRES", "DRAGON", "ELECTRIQUE", "FEE",
@@ -88,7 +114,9 @@ public class JobManager {
                     JsonObject playerDataJson = JsonHelper.readJsonFile(path);
                     if (playerDataJson != null) {
                         String currentJob = playerDataJson.get("currentJob").getAsString();
-                        PlayerJobData playerData = new PlayerJobData(currentJob);
+                        int xp = playerDataJson.has("xp") ? playerDataJson.get("xp").getAsInt() : 0;
+                        int level = playerDataJson.has("level") ? playerDataJson.get("level").getAsInt() : 1;
+                        PlayerJobData playerData = new PlayerJobData(currentJob, xp, level);
                         this.playerJobData.put(playerUuid, playerData);
                         CobbleJob.LOGGER.info("Données joueur chargées : " + playerUuid + " - Job: " + currentJob);
                     }
@@ -128,6 +156,8 @@ public class JobManager {
 
         JsonObject json = new JsonObject();
         json.addProperty("currentJob", playerData.getCurrentJob());
+        json.addProperty("xp", playerData.getXp());
+        json.addProperty("level", playerData.getLevel());
 
         try {
             JsonHelper.writeJsonFile(jobDataPath.resolve(playerId.toString() + ".json"), json);
