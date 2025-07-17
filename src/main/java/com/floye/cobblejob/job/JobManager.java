@@ -138,7 +138,7 @@ public class JobManager {
         PlayerJobData playerData = this.playerJobData.get(playerId);
 
         if (playerData == null) {
-            playerData = new PlayerJobData(jobTypeName);
+            playerData = new PlayerJobData(jobTypeName, 0, 1); // XP initial = 0, niveau initial = 1
             this.playerJobData.put(playerId, playerData);
         } else {
             playerData.setCurrentJob(jobTypeName);
