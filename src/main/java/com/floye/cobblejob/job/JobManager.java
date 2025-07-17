@@ -50,6 +50,12 @@ public class JobManager {
         PlayerJobData playerData = this.playerJobData.get(playerId);
         if (playerData == null) return "Aucun métier";
 
+        if (playerData.getLevel() >= PlayerJobData.MAX_LEVEL) {
+            return String.format("Niveau %d - MAX XP",
+                    playerData.getXp(),
+                    playerData.getXpForNextLevel());
+        }
+
         return String.format("Niveau %d - %d/%d XP",
                 playerData.getLevel(),
                 playerData.getXp(),

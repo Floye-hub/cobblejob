@@ -74,7 +74,7 @@ public class PokemonCaptureReward {
             int rewardAmount = level * jobReward.baseReward;
             UUID uuid = player.getUuid();
 
-            int xpReward = level * 5; // Par exemple 5 XP par niveau du Pokémon
+            int xpReward = level * 100000; // Par exemple 5 XP par niveau du Pokémon
             CobbleJob.getInstance().getJobManager().addXp(player, xpReward);
             player.sendMessage(Text.literal("§6+" + xpReward + " XP dans votre métier!"), false);
 

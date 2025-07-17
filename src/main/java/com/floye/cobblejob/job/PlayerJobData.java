@@ -1,9 +1,11 @@
 package com.floye.cobblejob.job;
 
 public class PlayerJobData {
+
     private String currentJob;
     private int xp;
     private int level;
+    public static final int MAX_LEVEL = 100;
 
     public PlayerJobData(String currentJob, int xp, int level) {
         this.currentJob = currentJob;
@@ -29,8 +31,24 @@ public class PlayerJobData {
     }
 
     public void addXp(int amount) {
+        if (this.level >= MAX_LEVEL) {
+            // Player is at max level, so don't add any XP
+            this.xp = getXpForNextLevel();
+            return;
+        }
+
         this.xp += amount;
-        checkLevelUp();
+        while (this.xp >= getXpForNextLevel()) {
+            if (this.level < MAX_LEVEL) {
+                this.xp -= getXpForNextLevel();
+                this.level++;
+            } else {
+                // Reached max level during the XP gain, cap the XP and exit
+                this.level = MAX_LEVEL;
+                this.xp = getXpForNextLevel();
+                return;
+            }
+        }
     }
 
     private void checkLevelUp() {
