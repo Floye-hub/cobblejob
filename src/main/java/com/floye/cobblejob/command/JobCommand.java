@@ -34,6 +34,9 @@ public class JobCommand {
                                 .suggests(getCurrentJobSuggestionProvider(jobManager))
                                 .executes(context -> leaveSpecificJob(context, jobManager)))
                 )
+                .then(literal("stats") // Nouvelle commande ici
+                        .executes(context -> showJobStats(context, jobManager))
+                )
         );
     }
 
@@ -41,6 +44,27 @@ public class JobCommand {
         return (context, builder) -> getJobSuggestions(context.getSource(), builder, jobManager);
     }
 
+    private static int showJobStats(CommandContext<ServerCommandSource> context, JobManager jobManager)
+            throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        // Récupération des données du joueur
+        String currentJob = jobManager.getCurrentJob(player);
+        if (currentJob == null) {
+            context.getSource().sendError(Text.literal("Vous n'avez pas de métier actuel."));
+            return 0;
+        }
+
+        int level = jobManager.getJobLevel(player);
+        String progress = jobManager.getJobProgress(player); // Format: "Niveau X - Y/Z XP"
+
+        // Envoi des informations au joueur
+        context.getSource().sendFeedback(() -> Text.literal("[" + currentJob + "] ")
+                        .formatted(Formatting.GOLD)
+                        .append(Text.literal("LVL " + level).formatted(Formatting.GREEN))
+                        .append(Text.literal(" - " + progress.split("-")[1].trim()).formatted(Formatting.AQUA)),
+                false);
+        return Command.SINGLE_SUCCESS;
+    }
     private static CompletableFuture<Suggestions> getJobSuggestions(ServerCommandSource source, SuggestionsBuilder builder, JobManager jobManager) {
         jobManager.getAvailableJobs().keySet().forEach(builder::suggest);
         return builder.buildFuture();
